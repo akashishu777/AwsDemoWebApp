@@ -51,5 +51,52 @@ this is becuas we need to assign our server to security group, for allowing traf
 32. Run the cmd (gunicorn --bind 0.0.0.0:8000 TestProject.wsgi:application)
 33. now visit http://ec2-15-206-178-249.ap-south-1.compute.amazonaws.com:8000/  but you will not see anything becuase inbound trafic are only allowed for 80 port lets add new inbound with 8000 port in aws
 34. Go to EC2 > Securitygroup > Edit Inbound rules add (Cutom TCP -> port range: 8000 -> source anywhere) save it.
-35. Your application is now running: http://ec2-15-206-178-249.ap-south-1.compute.amazonaws.com:8000
+
+Your application is now running: http://ec2-15-206-178-249.ap-south-1.compute.amazonaws.com:8000
+
+35. Now we will install supervisor for running the app in background cmd (sudo apt-get install -y supervisor)
+36. now we need to create a configuration so that supersior read from the config and appropreatly restart/start the application and where to log the error.
+37. Now switch to -> cmd (cd /etc/supervisor/conf.d/) you are in now (env) ubuntu@ip-172-31-14-42:/etc/supervisor/conf.d$
+38. Create configuration file cmd (sudo touch gunicorn.conf) run ls for seeing created file.
+39. Now edit the config file cmd (sudo nano gunicorn.conf)
+
+[program:gunicorn]
+directory=/home/ubuntu/AwsDemoWebApp
+command=/home/ubuntu/env/bin/gunicorn --workers 3 --bind unix:/home/ubuntu/AwsDemoWebApp/app.sock TestProject.wsgi:application
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/gunicorn/gunicorn.err.log
+stdout_logfile=/var/log/gunicorn/gunicorn.out.log
+
+[group:guni]
+programs:gunicorn
+
+40. save and exit cmd (ctrl + O   press enter then  ctrl + X)
+41. create dir which we mentioned above in the code cmd (sudo mkdir /var/log/gunicorn)
+42. now lets tellsupervisor to read this file cmd (sudo supervisorctl reread)
+43. now lets tell the superviror to start the guni cmd (sudo supervisorctl update) msg (guni: added process group)
+44. lets check the status now cmd (sudo supervisorctl status) now in the background gunicorn is running.
+45. Next steps is to congifure nginx to read from this scoket file 
+46. cmd (cd) go back to hone directory 
+47. cd /etc/nginx/sites-available/   and see the files by cmd (ls)
+48. cat default (just sample config file)
+49. now lets create a new file for our application cmd (sudo touch django.conf)
+50. sudo nano django.conf
+
+server {
+	listen 80;
+	server_name ec2-15-206-178-249.ap-south-1.compute.amazonaws.com;
+
+	location / {
+		include proxy_params;
+		proxy_pass http://unix:/home/ubuntu/AwsDemoWebApp/app.sock;
+	}
+}
+
+exit cmd (sudo nano django.conf)
+now paste this code in django.conf and save it with cmd (CTRL+ O & CTRL + X)
+
+51. now lets test this conf cmd (sudo nginx -t) but this is not reading our conf file.
+52. lets enable this site cmd (sudo ln django.conf /etc/nginx/sites-enabled/)
+53. sudo service nginx restart
 
