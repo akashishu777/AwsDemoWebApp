@@ -100,3 +100,4 @@ now paste this code in django.conf and save it with cmd (CTRL+ O & CTRL + X)
 52. lets enable this site cmd (sudo ln django.conf /etc/nginx/sites-enabled/)
 53. sudo service nginx restart
 
+Tutorial: https://www.youtube.com/watch?v=u0oEIqQV_-E
